@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Environments (Anaconda/Miniconda)
+.env
+.venv
+env/
+venv/
+python/
+
+# Data (データ分析でよく使う形式)
+*.csv
+*.xlsx
+*.pkl
+*.parquet
+*.sqlite3
+
+# VS Code
+.vscode/
