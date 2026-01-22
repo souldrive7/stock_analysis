@@ -32,6 +32,7 @@
 ```bash
 # コンダ環境の有効化
 conda activate jupyter_env
+
 5. 実績・活動
 NVIDIA Student Ambassador (AI/DS Team): 2026年4月本格始動予定
 
