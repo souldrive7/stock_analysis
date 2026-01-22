@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+Config.py
+config.py
+*.log
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -17,9 +20,14 @@ python/
 # Data (データ分析でよく使う形式)
 *.csv
 *.xlsx
+*.xls
 *.pkl
 *.parquet
 *.sqlite3
 
-# VS Code
+# VS Code (個人の設定ファイルが含まれるため除外推奨)
 .vscode/
+
+# Continue / AI Tools (前回の話題に関連して追加)
+config.json
+.continue/
