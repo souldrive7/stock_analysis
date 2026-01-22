@@ -19,18 +19,17 @@ class Config:
         "bagging_fraction": 0.8,
         "bagging_freq": 5,
         "verbose": -1,
-        "is_unbalance": False, # データ生成が綺麗なのでFalseでも十分精度が出ます
+        "is_unbalance": False,
         "n_estimators": 1000,
         "early_stopping_rounds": 50
     }
 
     # === Logistic Regression Parameters ===
-    # 収束するように最適化された設定
     LOGISTIC_PARAMS = {
         'C': 1.0,
         'penalty': 'l2',
-        'solver': 'lbfgs',  # 高速で安定したソルバー
-        'max_iter': 5000,   # 警告が出ないよう十分な回数を確保
+        'solver': 'lbfgs',
+        'max_iter': 5000,
         'random_state': 42
     }
 
@@ -52,4 +51,17 @@ class Config:
         'learning_rate': 0.01,
         'epochs': 50,
         'batch_size': 128
+    }
+
+    # === AutoEncoder Parameters ===
+    # 特徴抽出用の設定です
+    # BaseModel を継承せず、独立した「特徴抽出器」として実装。
+    # これにより Runner のロジック（教師あり学習用）と混ざるのを防ぐ。
+    AE_PARAMS = {
+        'input_dim': None,        # 実行時に決定
+        'encoding_dim': 16,       # 圧縮後の次元数（抽出したい特徴量数）
+        'learning_rate': 0.001,
+        'epochs': 50,
+        'batch_size': 256,
+        'patience': 5             # Early Stopping用
     }
