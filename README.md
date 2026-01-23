@@ -16,11 +16,18 @@ Config設定により、AutoEncoderによる特徴抽出プロセスのON/OFFを
 
 ```mermaid
 graph TD
-    %% ノードのスタイル定義
-    classDef data fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef process fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
-    classDef ae fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef model fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    %% ダークモード対応の初期設定
+    %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#ffffff', 'edgeLabelBackground':'#2d2d2d', 'tertiaryColor': '#404040'}}}%%
+
+    %% ノードのスタイル定義 (明るく鮮やかな配色に変更)
+    %% data: 明るいシアンブルー (文字色:黒)
+    classDef data fill:#80DEEA,stroke:#00ACC1,stroke-width:2px,color:#000000;
+    %% process: 明るいイエローオレンジ (文字色:黒)
+    classDef process fill:#FFE082,stroke:#FFB300,stroke-width:2px,color:#000000;
+    %% ae: 明るいライムグリーン (文字色:黒)
+    classDef ae fill:#C5E1A5,stroke:#7CB342,stroke-width:2px,color:#000000;
+    %% model: 明るいラベンダーパープル (文字色:黒)
+    classDef model fill:#CE93D8,stroke:#8E24AA,stroke-width:2px,color:#000000;
 
     Data[Raw Data]:::data --> Pre[前処理 & 標準化]:::process
     Pre --> Switch{AE Enabled?}
