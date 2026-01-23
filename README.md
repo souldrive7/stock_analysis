@@ -16,8 +16,7 @@ Config設定により、AutoEncoderによる特徴抽出プロセスのON/OFFを
 
 ```mermaid
 graph TD
-    %% フォント設定と配色設定
-    %% fontFamilyに日本語フォントを優先順に指定
+    %% フォントと配色の設定
     %%{init: {
         'theme': 'base',
         'themeVariables': {
@@ -34,33 +33,41 @@ graph TD
     classDef ae fill:#C5E1A5,stroke:#7CB342,stroke-width:2px,color:#000000;
     classDef model fill:#CE93D8,stroke:#8E24AA,stroke-width:2px,color:#000000;
 
-    Data[Raw Data]:::data --> Pre[前処理 & 標準化]:::process
-    Pre --> Switch{AE Enabled?}
+    Data["Raw Data"]:::data
 
+    %% サブグラフ: 特徴量エンジニアリング
     subgraph "Feature Engineering (AutoEncoder)"
-        Switch -- Yes --> AE[Denoising AutoEncoder]:::ae
+        Pre["前処理 & 標準化"]:::process
+        Switch{"AE Enabled?"}
+        
+        Switch -- Yes --> AE["Denoising AutoEncoder"]:::ae
         AE --> Latent["潜在変数 (Latent Features)"]:::ae
         AE --> Recon["再構成誤差 (Reconstruction Error)"]:::ae
-        Latent & Recon --> Concat[特徴量結合]:::process
+        
+        %% 結合処理
+        Latent & Recon --> Concat["特徴量結合"]:::process
         Switch -- No --> Concat
+        Pre --> Switch
         Pre --> Concat
     end
 
-    Concat --> Features[全特徴量セット]:::data
+    Data --> Pre
+    Concat --> Features["全特徴量セット"]:::data
 
+    %% サブグラフ: アンサンブルモデル
     subgraph "Ensemble Models"
-        Features --> LGBM[LightGBM]:::model
-        Features --> Logit[Logistic Regression]:::model
-        Features --> M_NN[Modern NN]:::model
-        Features --> S_NN[Simple NN]:::model
+        Features --> LGBM["LightGBM"]:::model
+        Features --> Logit["Logistic Regression"]:::model
+        Features --> M_NN["Modern NN"]:::model
+        Features --> S_NN["Simple NN"]:::model
     end
 
-    LGBM -->|Weight: 0.5| Ens((アンサンブル)):::process
+    LGBM -->|Weight: 0.5| Ens(("アンサンブル")):::process
     Logit -->|Weight: 0.0| Ens
     M_NN -->|Weight: 0.25| Ens
     S_NN -->|Weight: 0.25| Ens
 
-    Ens --> Result[最終予測スコア]:::data
+    Ens --> Result["最終予測スコア"]:::data
 ```
 ## 3. 実装機能 (Key Features)
 Denoising AutoEncoder (Feature Extraction)
