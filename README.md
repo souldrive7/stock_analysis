@@ -49,7 +49,7 @@ graph TD
     S_NN -->|Weight: 0.25| Ens
 
     Ens --> Result[最終予測スコア]:::data
-
+```
 ## 3. 実装機能 (Key Features)
 Denoising AutoEncoder (Feature Extraction)
 ノイズを付与した入力から元のデータを復元するタスクを通じて、データの本質的な構造を学習します。
