@@ -27,8 +27,8 @@ graph TD
 
     subgraph "Feature Engineering (AutoEncoder)"
         Switch -- Yes --> AE[Denoising AutoEncoder]:::ae
-        AE --> Latent[潜在変数 (Latent Features)]:::ae
-        AE --> Recon[再構成誤差 (Reconstruction Error)]:::ae
+        AE --> Latent["潜在変数 (Latent Features)"]:::ae
+        AE --> Recon["再構成誤差 (Reconstruction Error)"]:::ae
         Latent & Recon --> Concat[特徴量結合]:::process
         Switch -- No --> Concat
         Pre --> Concat
@@ -109,6 +109,7 @@ conda activate jupyter_env
 pip install -r requirements.txt
 
 分析の実行
+
 python main.py
 
 実行結果（スコア、SHAP重要度プロット、Gain Chartなど）は data/output/YYYYMMDD_HHMMSS/ ディレクトリに保存されます。
@@ -120,9 +121,9 @@ class Config:
     # AutoEncoderを使用するかどうかのフラグ
     USE_AUTOENCODER = True
 
-    7. 実績・活動
+7. 実績・活動
 NVIDIA Student Ambassador (AI/DS Team): 2026年4月本格始動予定
 
 NEC主催データ分析コンペ: 2025年夏季 優秀賞受賞
 
-© 2026 Akifumi Goto (Shiga University)
+© 2026 Akifumi Goto (Shiga University / SMBC Nikko Securities Inc.) All Rights Reserved.
