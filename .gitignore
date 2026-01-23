@@ -1,23 +1,33 @@
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
-Config.py
-config.py
+*.so
 *.log
 
-# Jupyter Notebook
+# --- Configuration & Secrets ---
+# APIキーなど機密情報を含む可能性がある設定ファイル
+# ※ 注意: 今回の src/config.py に機密情報がない場合は
+#    GitHub共有用にここ（config.py）をコメントアウト(#)して除外を解除してください
+#Config.py
+#config.py
+#src/config.py
+.env
+
+# --- Jupyter Notebook ---
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
-# Environments (Anaconda/Miniconda)
+# --- Environments (Anaconda/Miniconda/venv) ---
 .env
 .venv
 env/
 venv/
 python/
+ENV/
 
-# Data (データ分析でよく使う形式)
+# --- Data (データ分析用) ---
+# データセットや中間生成ファイルは容量が大きいため除外
 *.csv
 *.xlsx
 *.xls
@@ -25,9 +35,17 @@ python/
 *.parquet
 *.sqlite3
 
-# VS Code (個人の設定ファイルが含まれるため除外推奨)
+# Specific Directories
+data/output/
+# data/input/
+
+# --- VS Code ---
 .vscode/
 
-# Continue / AI Tools (前回の話題に関連して追加)
+# --- Continue / AI Tools ---
 config.json
 .continue/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db

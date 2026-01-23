@@ -53,15 +53,15 @@ class Config:
         'batch_size': 128
     }
 
-    # === AutoEncoder Parameters ===
-    # 特徴抽出用の設定です
-    # BaseModel を継承せず、独立した「特徴抽出器」として実装。
-    # これにより Runner のロジック（教師あり学習用）と混ざるのを防ぐ。
+# === Feature Engineering Flags ===
+    USE_AUTOENCODER = False 
+
+# === AutoEncoder Parameters ===
     AE_PARAMS = {
-        'input_dim': None,        # 実行時に決定
-        'encoding_dim': 16,       # 圧縮後の次元数（抽出したい特徴量数）
+        'input_dim': None,
+        'encoding_dim': 4,
         'learning_rate': 0.001,
         'epochs': 50,
         'batch_size': 256,
-        'patience': 5             # Early Stopping用
+        'patience': 5
     }

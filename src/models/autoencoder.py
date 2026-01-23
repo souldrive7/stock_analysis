@@ -25,8 +25,8 @@ class DenoisingAutoEncoder:
         
         # 2. Gaussian Noise (Denoising)
         # 入力にノイズを加えることで、モデルが「本質的なパターン」だけを学習するように促す
-        # 株価データのようにノイズが多いデータセットで非常に有効です
-        noisy_input = GaussianNoise(0.05)(input_layer)
+        # 株価データのようにノイズが多いデータセットで有効
+        noisy_input = GaussianNoise(0.15)(input_layer)
 
         # 3. Encoder (圧縮プロセス)
         x = Dense(64, activation='relu')(noisy_input)

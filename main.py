@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import shap
 from sklearn.calibration import calibration_curve
 from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.preprocessing import StandardScaler
 
 # 自作モジュールのインポート
 from src.config import Config
@@ -18,6 +19,7 @@ from src.runner import Runner
 from src.models.lgbm import LGBMModel
 from src.models.logistic import LogisticModel
 from src.models.nn import NeuralNetModel
+from src.models.autoencoder import DenoisingAutoEncoder
 
 # Simple NNのインポート (存在チェック付き)
 try:
@@ -74,7 +76,7 @@ def make_synthetic(n_weeks=104, n_customers=200, seed=7, lags=(1, 4, 12), out_di
     base_panel["sales_contact_count"] = rng.poisson(0.7, n_rows)
     base_panel["contact_visit"] = rng.binomial(1, 0.01, n_rows)
     
-    # ダミー特徴量（ランダムだが、後でラグ特徴量として使う）
+    # ダミー特徴量
     dummy_cols = [
         "contact_phone", "contact_email", "customer_trade_count", 
         "fundwrap_proposal_count", "fundwrap_buy_amount", "fundwrap_sell_amount",
@@ -92,13 +94,12 @@ def make_synthetic(n_weeks=104, n_customers=200, seed=7, lags=(1, 4, 12), out_di
         for c in cols_to_lag:
             df[f"{c}_lag{lag}"] = df.groupby("customer_id")[c].shift(lag)
 
-    # 目的変数生成（素直なロジック）
+    # 目的変数生成
     def scale(col):
         std = col.std()
         if std == 0: std = 1.0
         return (col - col.mean()) / std
 
-    # ここを「ノイズ少なめ・線形関係強め」にします
     logit_signal = (
         1.0 * scale(df["customer_risk_tolerance"]) +
         0.5 * scale(df["customer_asset_size"]) +
@@ -107,11 +108,8 @@ def make_synthetic(n_weeks=104, n_customers=200, seed=7, lags=(1, 4, 12), out_di
         0.6 * scale((df["market_topix_return_lag4"].abs() + df["market_sp500_return_lag4"].abs()).fillna(0))
     )
     
-    # ノイズを小さく設定 (0.2)
     noise = rng.normal(0, 0.2, size=len(df)) 
-    
-    # ベースラインの発生率調整
-    base_logit = np.log(0.10 / 0.90) # 約10%の発生率を目指す
+    base_logit = np.log(0.10 / 0.90)
 
     p = 1 / (1 + np.exp(-(base_logit + logit_signal + noise)))
     df["fundwrap_buy_flag_nextweek"] = rng.binomial(1, p)
@@ -122,6 +120,48 @@ def make_synthetic(n_weeks=104, n_customers=200, seed=7, lags=(1, 4, 12), out_di
     df = df.sort_values(["customer_id", "date"]).reset_index(drop=True)
     
     return df
+
+# ========== AEパイプライン実行関数 (新規追加) ==========
+def run_ae_pipeline(df, feature_cols, ae_params_config):
+    """
+    AutoEncoderの学習、特徴抽出、再構成誤差の計算を行い、
+    特徴量を追加したDataFrameと新しいカラム名のリストを返す関数
+    """
+    print("\n--- Running AutoEncoder Feature Extraction ---")
+    
+    # (1) 標準化
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(df[feature_cols])
+    
+    # (2) パラメータ設定 (input_dimを動的に設定)
+    ae_params = ae_params_config.copy()
+    ae_params['input_dim'] = X_scaled.shape[1]
+    print(f"AE Params: {ae_params}")
+
+    # (3) AEモデルの学習
+    ae = DenoisingAutoEncoder(ae_params)
+    ae.fit(X_scaled, X_val=X_scaled)
+    
+    # (4) 特徴量の抽出
+    # A. 潜在変数 (Latent Features)
+    ae_features = ae.transform(X_scaled)
+    ae_col_names = [f'ae_feat_{i}' for i in range(ae_params['encoding_dim'])]
+    df_ae = pd.DataFrame(ae_features, columns=ae_col_names, index=df.index)
+    
+    # B. 再構成誤差 (Reconstruction Error)
+    reconstructed_data = ae.model.predict(X_scaled, verbose=0)
+    mse = np.mean(np.power(X_scaled - reconstructed_data, 2), axis=1)
+    df_ae['ae_recon_error'] = mse
+    ae_col_names.append('ae_recon_error')
+    
+    print(f"Added Reconstruction Error feature. Mean MSE: {mse.mean():.4f}")
+    
+    # 結合
+    df_out = pd.concat([df, df_ae], axis=1)
+    
+    print(f"Added {len(ae_col_names)} AE features.")
+    
+    return df_out, ae_col_names
 
 # ========== 可視化関数群 ==========
 def plot_gain_chart(oof_df, output_dir, run_id):
@@ -195,7 +235,7 @@ def main():
     # 1. データ生成
     df = make_synthetic(n_weeks=104, n_customers=200, out_dir=out_dir)
     
-    # 特徴量定義
+    # 基本特徴量の定義
     lag_cols = [c for c in df.columns if "_lag" in c]
     base_cols = ["customer_age", "customer_asset_size", "customer_risk_tolerance", "sales_experience_years"]
     feature_cols = base_cols + lag_cols
@@ -203,12 +243,24 @@ def main():
 
     target_col = 'fundwrap_buy_flag_nextweek'
     group_col = 'customer_id'
-    
-    print(f"Features: {len(feature_cols)}, Target Rate: {df[target_col].mean():.2%}")
+
+    # =========================================================
+    # Phase 1.5: AutoEncoder Feature Extraction (Switchable)
+    # =========================================================
+    # Config.USE_AUTOENCODER が True の場合のみ実行
+    if getattr(Config, "USE_AUTOENCODER", False):
+        df, ae_new_cols = run_ae_pipeline(df, feature_cols, Config.AE_PARAMS)
+        feature_cols += ae_new_cols
+        print(f"AE Enabled: Total features increased to {len(feature_cols)}")
+    else:
+        print("\n--- AutoEncoder Feature Extraction Skipped (Config.USE_AUTOENCODER=False) ---")
+    # =========================================================
+
+    print(f"Final Features: {len(feature_cols)}, Target Rate: {df[target_col].mean():.2%}")
     results = df[['customer_id', target_col]].copy()
     results.rename(columns={target_col: 'y_true'}, inplace=True)
     
-    # 2. モデル実行
+    # 2. モデル実行 (予測フェーズ)
     # --- LightGBM ---
     print("\n--- Running LightGBM ---")
     runner_lgbm = Runner(LGBMModel, Config.LGBM_PARAMS)
