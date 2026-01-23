@@ -16,17 +16,17 @@ Config設定により、AutoEncoderによる特徴抽出プロセスのON/OFFを
 
 ```mermaid
 graph TD
-    %% ダークモード対応の初期設定
-    %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#ffffff', 'edgeLabelBackground':'#2d2d2d', 'tertiaryColor': '#404040'}}}%%
+    %% ダークモード対応の初期設定（文字色を黒、エッジのラベル背景を暗く設定）
+    %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#000000', 'edgeLabelBackground':'#ffffff', 'tertiaryColor': '#f0f0f0'}}}%%
 
-    %% ノードのスタイル定義 (明るく鮮やかな配色に変更)
-    %% data: 明るいシアンブルー (文字色:黒)
+    %% ノードのスタイル定義 (明るく鮮やかで、文字が読みやすい配色に変更)
+    %% data: 明るいシアンブルー (データフローを表現)
     classDef data fill:#80DEEA,stroke:#00ACC1,stroke-width:2px,color:#000000;
-    %% process: 明るいイエローオレンジ (文字色:黒)
+    %% process: 明るいアンバー/オレンジ (処理・アクションを表現)
     classDef process fill:#FFE082,stroke:#FFB300,stroke-width:2px,color:#000000;
-    %% ae: 明るいライムグリーン (文字色:黒)
+    %% ae: 明るいライムグリーン (AutoEncoder関連を表現)
     classDef ae fill:#C5E1A5,stroke:#7CB342,stroke-width:2px,color:#000000;
-    %% model: 明るいラベンダーパープル (文字色:黒)
+    %% model: 明るいラベンダーパープル (予測モデルを表現)
     classDef model fill:#CE93D8,stroke:#8E24AA,stroke-width:2px,color:#000000;
 
     Data[Raw Data]:::data --> Pre[前処理 & 標準化]:::process
