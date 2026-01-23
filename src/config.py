@@ -54,7 +54,7 @@ class Config:
     }
 
 # === Feature Engineering Flags ===
-    USE_AUTOENCODER = False 
+    USE_AUTOENCODER = True 
 
 # === AutoEncoder Parameters ===
     AE_PARAMS = {
