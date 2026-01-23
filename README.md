@@ -33,7 +33,10 @@ graph TD
     classDef ae fill:#C5E1A5,stroke:#7CB342,stroke-width:2px,color:#000000;
     classDef model fill:#CE93D8,stroke:#8E24AA,stroke-width:2px,color:#000000;
 
-    Data["Raw Data"]:::data
+    %% ★修正点: Raw Dataを「Input Data」というサブグラフで囲み、下のブロックとの距離を確保
+    subgraph "Input Data"
+        Data["Raw Data"]:::data
+    end
 
     %% サブグラフ: 特徴量エンジニアリング
     subgraph "Feature Engineering (AutoEncoder)"
@@ -48,9 +51,9 @@ graph TD
         Latent & Recon --> Concat["特徴量結合"]:::process
         Switch -- No --> Concat
         Pre --> Switch
-        Pre --> Concat
     end
 
+    %% ブロック間の接続
     Data --> Pre
     Concat --> Features["全特徴量セット"]:::data
 
