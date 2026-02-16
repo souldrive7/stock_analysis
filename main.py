@@ -21,12 +21,6 @@ from src.models.logistic import LogisticModel
 from src.models.nn import NeuralNetModel
 from src.models.autoencoder import DenoisingAutoEncoder
 
-# Simple NNのインポート (存在チェック付き)
-try:
-    from src.models.simple_nn import SimpleNeuralNetModel
-except ImportError:
-    print("Warning: src.models.simple_nn not found.")
-
 # ========== データ生成関数 (高精度・安定版) ==========
 def make_synthetic(n_weeks=104, n_customers=200, seed=7, lags=(1, 4, 12), out_dir="data/output"):
     os.makedirs(out_dir, exist_ok=True)
@@ -179,8 +173,7 @@ def plot_gain_chart(oof_df, output_dir, run_id):
     
     plot_model_gain("y_pred_proba_lgbm", "LightGBM", "blue")
     plot_model_gain("y_pred_proba_logit", "Logistic", "orange", "--")
-    plot_model_gain("y_pred_proba_nn", "Modern NN", "green", "-.")
-    plot_model_gain("y_pred_proba_simple_nn", "Simple NN", "purple", ":", width=2.0)
+    plot_model_gain("y_pred_proba_nn", "NN", "green", "-.")
     plot_model_gain("y_pred_proba_ensemble", "Ensemble", "red", "-", width=2.5)
 
     plt.plot([0, 1], [0, 1], linestyle=":", color="gray", label="Random")
@@ -204,8 +197,7 @@ def plot_calibration_curve(oof_df, output_dir, run_id):
         
     plot_model_calib("y_pred_proba_lgbm", "LightGBM", "blue", 'o')
     plot_model_calib("y_pred_proba_logit", "Logistic", "orange", 's')
-    plot_model_calib("y_pred_proba_nn", "Modern NN", "green", '^')
-    plot_model_calib("y_pred_proba_simple_nn", "Simple NN", "purple", 'x')
+    plot_model_calib("y_pred_proba_nn", "NN", "green", '^')
     plot_model_calib("y_pred_proba_ensemble", "Ensemble", "red", 'D')
 
     plt.title(f"Calibration Curve (Run: {run_id})")
@@ -275,12 +267,8 @@ def main():
     print("\n--- Running Logistic ---")
     results['y_pred_proba_logit'] = Runner(LogisticModel, Config.LOGISTIC_PARAMS).run_cv(df, feature_cols, target_col, group_col)
     
-    print("\n--- Running Modern NN ---")
+    print("\n--- Running NN ---")
     results['y_pred_proba_nn'] = Runner(NeuralNetModel, Config.NN_PARAMS).run_cv(df, feature_cols, target_col, group_col)
-
-    if 'SimpleNeuralNetModel' in globals():
-        print("\n--- Running Simple NN ---")
-        results['y_pred_proba_simple_nn'] = Runner(SimpleNeuralNetModel, Config.SIMPLE_NN_PARAMS).run_cv(df, feature_cols, target_col, group_col)
 
     # 3. アンサンブル
     print("\n--- Calculating Ensemble ---")
@@ -294,9 +282,6 @@ def main():
     if "nn" in weights:
         pred_ensemble += results['y_pred_proba_nn'] * weights["nn"]
         total_w += weights["nn"]
-    if "simple_nn" in weights and 'y_pred_proba_simple_nn' in results.columns:
-        pred_ensemble += results['y_pred_proba_simple_nn'] * weights["simple_nn"]
-        total_w += weights["simple_nn"]
     
     if total_w > 0:
         results['y_pred_proba_ensemble'] = pred_ensemble / total_w
@@ -311,8 +296,8 @@ def main():
     # 5. Metrics
     scores = []
     y_true = results['y_true']
-    target_models = ['LightGBM', 'Logistic', 'Modern NN', 'Simple NN', 'Ensemble']
-    target_cols = ['y_pred_proba_lgbm', 'y_pred_proba_logit', 'y_pred_proba_nn', 'y_pred_proba_simple_nn', 'y_pred_proba_ensemble']
+    target_models = ['LightGBM', 'Logistic', 'NN', 'Ensemble']
+    target_cols = ['y_pred_proba_lgbm', 'y_pred_proba_logit', 'y_pred_proba_nn', 'y_pred_proba_ensemble']
     
     for model_name, col in zip(target_models, target_cols):
         if col in results.columns and not isinstance(results[col], int) and results[col].sum() != 0:

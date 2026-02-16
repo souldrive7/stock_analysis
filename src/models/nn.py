@@ -41,7 +41,7 @@ class NeuralNetModel(BaseModel):
         
         input_dim = X_tr.shape[1]
         
-        # --- Modern NN Architecture ---
+        # --- NN Architecture ---
         model = Sequential()
         model.add(Input(shape=(input_dim,)))
         

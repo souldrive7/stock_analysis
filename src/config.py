@@ -6,7 +6,6 @@ class Config:
     ENSEMBLE_WEIGHTS = {
         "lgbm": 0.5,
         "nn": 0.25,
-        "simple_nn": 0.25
     }
 
     # === LightGBM Parameters ===
@@ -33,24 +32,26 @@ class Config:
         'random_state': 42
     }
 
-    # === Modern NN Parameters ===
+    # === NN Parameters ===
     NN_PARAMS = {
         'hidden_layers': [128, 64, 32],
         'dropout': 0.3,
-        'learning_rate': 0.001,
+        'lr': 0.001,
         'epochs': 50,
         'batch_size': 256,
         'patience': 10
     }
-    
-    # === Simple NN Parameters ===
-    SIMPLE_NN_PARAMS = {
-        'input_dim': None,
-        'hidden_dim': 64,
-        'output_dim': 1,
-        'learning_rate': 0.01,
-        'epochs': 50,
-        'batch_size': 128
+
+    # === EDL Parameters ===
+    EDL_PARAMS = {
+        "hidden_layers": [128, 64, 32],
+        "dropout": 0.2,
+        "lr": 0.001,
+        "epochs": 50,
+        "batch_size": 256,
+        "patience": 10,
+        "annealing_epochs": 10,
+        "seed": 42,
     }
 
 # === Feature Engineering Flags ===
