@@ -33,6 +33,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable EDL model and uncertainty outputs.",
     )
+
+    # NEW: EDA runner
+    parser.add_argument(
+        "--run-eda",
+        action="store_true",
+        help="Run EDA after dropping leakage columns (e.g., duration) and save into run_dir/eda",
+    )
+
     parser.add_argument(
         "--debug-call-list",
         action="store_true",
@@ -70,6 +78,7 @@ def main() -> None:
         include_debug_columns=(args.debug_call_list or args.debug_score_columns),
         enable_edl=args.enable_edl,
         score_mode=args.score_mode,
+        run_eda=args.run_eda,  # NEW
     )
 
 
