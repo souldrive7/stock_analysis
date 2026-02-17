@@ -89,6 +89,7 @@ def run_marketing_pipeline(
     include_debug_columns: bool = False,
     enable_edl: bool = False,
     score_mode: str = "mean_proba",
+    run_eda: bool = False,
 ) -> None:
     if not os.path.exists(data_path):
         raise FileNotFoundError(
@@ -96,6 +97,10 @@ def run_marketing_pipeline(
             "Next action: place bank-full.csv under data/input/ "
             "or specify --data-path explicitly."
         )
+
+    if run_eda:
+        # TODO: Add EDA runner on leakage-dropped features (e.g., duration removed).
+        print("run_eda=True (TODO): EDA step is not implemented yet; continuing pipeline.")
 
     os.makedirs(output_dir, exist_ok=True)
     df = pd.read_csv(data_path, sep=";").reset_index(drop=True)

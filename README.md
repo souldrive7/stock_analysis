@@ -23,7 +23,7 @@ python main.py
 
 - Entry point: `marketing_main.py`
 - Input is real marketing data CSV loaded with `pd.read_csv(..., sep=";")`.
-- Models: `LGBM` / `Logistic` / `NN`
+- Models: `LGBM` / `Logistic` / `NN` / `EDL` (optional with `--enable-edl`)
 - NN implementation is only `src/models/nn.py` (`NeuralNetModel`).
 - Cross-validation: `StratifiedKFold`
 - Preprocessing is fold-local to avoid leakage:
@@ -50,6 +50,18 @@ Optional debug columns for call list:
 python marketing_main.py --data-path data/input/bank-full.csv --debug-score-columns
 ```
 
+Enable EDL:
+
+```bash
+python marketing_main.py --data-path data/input/bank-full.csv --enable-edl
+```
+
+Enable EDL with uncertainty-weighted score:
+
+```bash
+python marketing_main.py --data-path data/input/bank-full.csv --enable-edl --score-mode edl_uncertainty_weighted
+```
+
 ### Output Column Contract
 
 `oof_results.csv`
@@ -58,7 +70,7 @@ python marketing_main.py --data-path data/input/bank-full.csv --debug-score-colu
 - `y_pred_proba_lgbm`
 - `y_pred_proba_logit`
 - `y_pred_proba_nn`
-- reserved for future EDL:
+- optional EDL columns (when `--enable-edl`):
   - `y_pred_proba_edl`
   - `y_pred_uncertainty_edl`
 
