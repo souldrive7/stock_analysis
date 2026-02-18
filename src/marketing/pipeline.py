@@ -3,8 +3,11 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold
+from datetime import datetime
+
 
 from src.config import Config
 from src.marketing.plots import (
@@ -78,6 +81,137 @@ def _run_oof_for_model(
 
     return {"proba": oof_proba, "uncertainty": oof_uncertainty}
 
+def run_basic_eda(
+    df: pd.DataFrame,
+    target: str,
+    output_dir: str,
+    positive_label=None,
+    top_cat: int = 10,
+) -> None:
+    """
+    Minimal EDA:
+      - prints summary to console
+      - saves text/csv files under output_dir
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    eda_txt = os.path.join(output_dir, f"eda_report_{ts}.txt")
+    miss_csv = os.path.join(output_dir, f"eda_missing_{ts}.csv")
+    dtypes_csv = os.path.join(output_dir, f"eda_dtypes_{ts}.csv")
+    topcats_csv = os.path.join(output_dir, f"eda_top_categories_{ts}.csv")
+
+    lines = []
+    lines.append("=== EDA REPORT (minimal) ===")
+    lines.append(f"shape: {df.shape[0]} rows x {df.shape[1]} cols")
+    lines.append(f"target: {target}")
+    if positive_label is not None:
+        lines.append(f"positive_label: {positive_label}")
+    lines.append("")
+
+    # head
+    lines.append("--- head(5) ---")
+    lines.append(df.head(5).to_string(index=False))
+    lines.append("")
+
+    # dtypes
+    dtypes_df = df.dtypes.astype(str).reset_index()
+    dtypes_df.columns = ["column", "dtype"]
+    dtypes_df.to_csv(dtypes_csv, index=False)
+    lines.append("--- dtypes (saved) ---")
+    lines.append(f"saved: {dtypes_csv}")
+    lines.append("")
+
+    # missing
+    miss = pd.DataFrame({
+        "column": df.columns,
+        "missing_count": df.isna().sum().values,
+    })
+    miss["missing_rate"] = miss["missing_count"] / float(len(df))
+    miss = miss.sort_values(["missing_rate", "missing_count"], ascending=False).reset_index(drop=True)
+    miss.to_csv(miss_csv, index=False)
+    lines.append("--- missing (top 30 shown; full saved) ---")
+    lines.append(miss.head(30).to_string(index=False))
+    lines.append(f"saved: {miss_csv}")
+    lines.append("")
+
+    # target distribution
+    lines.append("--- target distribution ---")
+    vc = df[target].value_counts(dropna=False)
+    lines.append(vc.to_string())
+    lines.append("")
+    vcn = df[target].value_counts(normalize=True, dropna=False)
+    lines.append("--- target distribution (rate) ---")
+    lines.append(vcn.to_string())
+    lines.append("")
+
+    # numeric / categorical split (simple)
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    cat_cols = [c for c in df.columns if c not in num_cols]
+
+    # numeric describe
+    if len(num_cols) > 0:
+        lines.append("--- numeric describe ---")
+        lines.append(df[num_cols].describe().to_string())
+        lines.append("")
+    else:
+        lines.append("--- numeric describe ---")
+        lines.append("(no numeric columns)")
+        lines.append("")
+
+    # top categories
+    top_rows = []
+    for c in cat_cols:
+        # skip target itself if it's categorical
+        if c == target:
+            continue
+        vc = df[c].value_counts(dropna=False).head(top_cat)
+        for k, v in vc.items():
+            top_rows.append({"column": c, "value": str(k), "count": int(v)})
+
+    topcats = pd.DataFrame(top_rows)
+    if len(topcats) > 0:
+        topcats.to_csv(topcats_csv, index=False)
+        lines.append(f"--- top categorical values (saved; top {top_cat} per col) ---")
+        lines.append(f"saved: {topcats_csv}")
+        lines.append(topcats.head(50).to_string(index=False))
+        lines.append("")
+    else:
+        lines.append("--- top categorical values ---")
+        lines.append("(no categorical columns)")
+        lines.append("")
+
+    # print and save
+    report = "\n".join(lines)
+    print(report)
+    with open(eda_txt, "w", encoding="utf-8") as f:
+        f.write(report + "\n")
+    print(f"[EDA] saved: {eda_txt}")
+
+def plot_score_scatter_two_modes(
+    oof_df: pd.DataFrame,
+    output_dir: str,
+    x_col: str,
+    y_col: str,
+    filename: str = "score_scatter_mean_vs_edl_weighted.png",
+) -> None:
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, filename)
+
+    d = oof_df[[x_col, y_col]].dropna()
+    if len(d) == 0:
+        print("[plot_score_scatter] No data to plot (all NaN).")
+        return
+
+    plt.figure()
+    plt.scatter(d[x_col].values, d[y_col].values, s=8)
+    plt.xlabel(x_col)
+    plt.ylabel(y_col)
+    plt.title("Score Scatter")
+    plt.tight_layout()
+    plt.savefig(path, dpi=150)
+    plt.close()
+    print(f"[plot_score_scatter] saved: {path}")
 
 def run_marketing_pipeline(
     data_path: str,
@@ -98,10 +232,10 @@ def run_marketing_pipeline(
             "or specify --data-path explicitly."
         )
 
+
     if run_eda:
         # TODO: Add EDA runner on leakage-dropped features (e.g., duration removed).
-        print("run_eda=True (TODO): EDA step is not implemented yet; continuing pipeline.")
-
+        print("run_eda=True: will run minimal EDA after loading and target detection.")
     os.makedirs(output_dir, exist_ok=True)
     df = pd.read_csv(data_path, sep=";").reset_index(drop=True)
     print(f"loaded_csv={data_path}")
@@ -110,7 +244,9 @@ def run_marketing_pipeline(
     target = detect_target_column(df, target_col)
     y, positive_label = encode_binary_target(df[target])
     print(f"target={target}, positive_label={positive_label}")
-
+    if run_eda:
+        # EDA should be executed on the raw df (before dropping columns) for transparency
+        run_basic_eda(df=df, target=target, output_dir=output_dir, positive_label=positive_label)
     id_col = detect_identifier_column(df)
     if id_col:
         row_id = df[id_col]
@@ -161,11 +297,39 @@ def run_marketing_pipeline(
         print(f"[{model_name}] AUC={auc:.6f}, AP={ap:.6f}")
 
     schema = build_score_schema()
-    score = build_call_score(oof_df, schema, score_mode=score_mode)
-    oof_df["score"] = score
+    # 1) always compute mean_proba score
+    score_mean = build_call_score(oof_df, schema, score_mode="mean_proba")
+    oof_df["score_mean_proba"] = score_mean
+    # 2) compute edl_uncertainty_weighted score only when EDL is enabled
+    oof_df["score_edl_uncertainty_weighted"] = np.nan
+    if enable_edl:
+        try:
+            oof_df["score_edl_uncertainty_weighted"] = build_call_score(
+            oof_df, schema, score_mode="edl_uncertainty_weighted"
+        )
+        except Exception as e:
+            print(f"[score] skip edl_uncertainty_weighted: {e}")
+    # pipeline's main score column follows selected score_mode
+    if score_mode == "mean_proba":
+        oof_df["score"] = oof_df["score_mean_proba"]
+    elif score_mode == "edl_uncertainty_weighted":
+        oof_df["score"] = oof_df["score_edl_uncertainty_weighted"]
+    else:
+        # fallback: compute whatever requested
+        oof_df["score"] = build_call_score(oof_df, schema, score_mode=score_mode)
 
+    # scatter plot for comparison (only when EDL-weighted score exists)
+    if oof_df["score_edl_uncertainty_weighted"].notna().any():
+        plot_score_scatter_two_modes(
+            oof_df=oof_df,
+            output_dir=output_dir,
+            x_col="score_mean_proba",
+            y_col="score_edl_uncertainty_weighted",
+        )
+    else:
+        print("[plot_score_scatter] skipped (no EDL-weighted score).")
     call_list = pd.DataFrame(
-        {"row_id": row_id.values, "score": score.values, "__idx": np.arange(len(oof_df))}
+        {"row_id": row_id.values, "score": oof_df["score"].values, "__idx": np.arange(len(oof_df))}
     ).sort_values(["score", "__idx"], ascending=[False, True], kind="mergesort")
     call_list = call_list.head(top_k).reset_index(drop=True)
     # rank definition: 1..K order inside call_list_top200.csv

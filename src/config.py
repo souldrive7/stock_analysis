@@ -39,13 +39,14 @@ class Config:
         'lr': 0.001,
         'epochs': 50,
         'batch_size': 256,
-        'patience': 10
+        'patience': 10,
+        'seed': 42,
     }
 
     # === EDL Parameters ===
     EDL_PARAMS = {
         "hidden_layers": [128, 64, 32],
-        "dropout": 0.2,
+        "dropout": 0.3,
         "lr": 0.001,
         "epochs": 50,
         "batch_size": 256,
@@ -65,4 +66,5 @@ class Config:
         'epochs': 50,
         'batch_size': 256,
         'patience': 5
+        'seed': 42,
     }
