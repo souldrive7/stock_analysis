@@ -75,37 +75,75 @@ def plot_marketing_gain_chart(
 
 
 def plot_marketing_calibration_curve(oof_df: pd.DataFrame, output_dir: str) -> Optional[str]:
+    """
+    Calibration curve (reliability diagram) for each model.
+    Fixes:
+      - use quantile binning to avoid empty / tiny bins in high-prob region
+      - reduce n_bins (default 10) to stabilize curves
+      - annotate each point with bin sample size n
+    """
     if "y_true" not in oof_df.columns or oof_df["y_true"].sum() == 0:
         print("[Marketing][Calibration] skipped: no positive samples in y_true.")
         return None
 
+    os.makedirs(output_dir, exist_ok=True)
+
+    y = oof_df["y_true"].to_numpy(dtype=int)
+
     plt.figure(figsize=(10, 7))
     plt.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Marketing perfect")
+
     for col in _pred_cols(oof_df):
         try:
+            p = oof_df[col].to_numpy(dtype=float)
+            mask = np.isfinite(p)
+            if mask.sum() == 0:
+                print(f"[Marketing][Calibration] skipped column '{col}': all NaN/inf.")
+                continue
+
+            yy = y[mask]
+            pp = p[mask]
+
+            # Stable binning: quantile (equal-count bins)
+            n_bins = 10
             prob_true, prob_pred = calibration_curve(
-                oof_df["y_true"], oof_df[col], n_bins=20, strategy="uniform"
+                yy, pp, n_bins=n_bins, strategy="quantile"
             )
-            plt.plot(
-                prob_pred,
-                prob_true,
-                marker="o",
-                label="Marketing " + col.replace("y_pred_proba_", "proba_"),
-            )
+
+            label = "Marketing " + col.replace("y_pred_proba_", "proba_")
+            plt.plot(prob_pred, prob_true, marker="o", label=label)
+
+            # Bin counts (n) for annotation
+            edges = np.quantile(pp, np.linspace(0, 1, n_bins + 1))
+            # guard against duplicate edges due to many identical probabilities
+            edges[0] -= 1e-12
+            edges[-1] += 1e-12
+            bin_id = np.digitize(pp, edges[1:-1], right=True)  # 0..n_bins-1
+            counts = np.bincount(bin_id, minlength=n_bins)
+
+            for x, yv, n in zip(prob_pred, prob_true, counts):
+                plt.annotate(
+                    f"n={int(n)}",
+                    (x, yv),
+                    textcoords="offset points",
+                    xytext=(5, 5),
+                    fontsize=8,
+                )
+
         except Exception as e:
             print(f"[Marketing][Calibration] skipped column '{col}': {e}")
 
-    plt.title("Marketing Calibration Curve")
+    plt.title("Marketing Calibration Curve (quantile bins)")
     plt.xlabel("Mean Predicted Probability")
     plt.ylabel("Fraction of Positives")
     plt.grid(True, linestyle=":")
     plt.legend(title="Marketing Models")
     plt.tight_layout()
+
     out = os.path.join(output_dir, "marketing_calibration_curve.png")
-    plt.savefig(out)
+    plt.savefig(out, dpi=150)
     plt.close()
     return out
-
 
 def plot_marketing_shap_lgbm(
     X_raw: pd.DataFrame,
