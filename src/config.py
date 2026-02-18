@@ -65,6 +65,6 @@ class Config:
         'learning_rate': 0.001,
         'epochs': 50,
         'batch_size': 256,
-        'patience': 5
+        'patience': 5,
         'seed': 42,
     }

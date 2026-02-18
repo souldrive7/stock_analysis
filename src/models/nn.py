@@ -62,7 +62,6 @@ class NeuralNetModel(BaseModel):
         model.add(BatchNormalization())
         model.add(Activation('swish'))
         model.add(Dropout(0.2))
-        
         model.add(Dense(1, activation='sigmoid'))
         
         # コンパイル (Focal Loss使用)
