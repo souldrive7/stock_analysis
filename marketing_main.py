@@ -1,6 +1,6 @@
 import argparse
-import datetime
 import os
+from datetime import datetime
 
 from src.marketing.pipeline import run_marketing_pipeline
 
@@ -16,8 +16,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default=None,
-        help="Output directory. Default: data/output/marketing/<timestamp>",
+        default="data/output/marketing",
+        help="Base output directory. A timestamped subfolder will be created under this directory.",
     )
     parser.add_argument("--target-col", type=str, default=None)
     parser.add_argument("--n-splits", type=int, default=5)
@@ -33,14 +33,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable EDL model and uncertainty outputs.",
     )
-
-    # NEW: EDA runner
     parser.add_argument(
         "--run-eda",
         action="store_true",
-        help="Run EDA after dropping leakage columns (e.g., duration) and save into run_dir/eda",
+        help="Run minimal EDA and save into the run output directory.",
     )
-
     parser.add_argument(
         "--debug-call-list",
         action="store_true",
@@ -62,11 +59,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    if args.output_dir:
-        output_dir = args.output_dir
-    else:
-        run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = os.path.join("data", "output", "marketing", run_id)
+
+    # Always create a timestamped run directory under the provided base output directory
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join(args.output_dir, run_id)
 
     run_marketing_pipeline(
         data_path=args.data_path,
@@ -78,7 +74,7 @@ def main() -> None:
         include_debug_columns=(args.debug_call_list or args.debug_score_columns),
         enable_edl=args.enable_edl,
         score_mode=args.score_mode,
-        run_eda=args.run_eda,  # NEW
+        run_eda=args.run_eda,
     )
 
 
